@@ -1,0 +1,13 @@
+{
+  "name": "timmy-tmux-sessionizer-osx",
+  "version": "1.0.0",
+  "description": "A Tmux Sessionizer for TMUX for MacOS ",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "MidhunManu",
+  "license": "GPL-2.0-only"
+}
