@@ -33,7 +33,6 @@ const list_paths = async () => {
 }
 
 const show_in_fzf = (paths) => {
-    return 
     const fzf = spawn('fzf', [], {
         stdio: ['pipe', 'inherit', 'inherit'],
     })
