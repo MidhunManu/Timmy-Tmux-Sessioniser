@@ -1,12 +1,21 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process'
-import { access, mkdir, readFile, writeFile } from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import { spawn } from 'child_process';
+
+import {
+    access,
+    appendFile,
+    mkdir,
+    readFile,
+    writeFile,
+} from 'fs/promises';
+
 import { constants } from 'fs';
 
-const PATH = path.join(
+import path from 'path';
+import os from 'os';
+
+const PATHS_FILE = path.join(
     os.homedir(),
     '.local',
     'share',
@@ -15,29 +24,27 @@ const PATH = path.join(
 );
 
 const ensure_storage = async () => {
-    const dir = path.dirname(PATH);
+    const dir = path.dirname(PATHS_FILE);
+
     await mkdir(dir, { recursive: true });
+
     try {
-        await access(PATH, constants.F_OK);
+        await access(PATHS_FILE, constants.F_OK);
     } catch {
-        await writeFile(PATH, '', 'utf-8');
+        await writeFile(PATHS_FILE, '', 'utf8');
     }
-}
+};
 
 const list_paths = async () => {
-    try {
-        const data = await readFile(PATH, "utf-8");
+    const data = await readFile(PATHS_FILE, 'utf8');
 
-        const paths = [
-            process.cwd(),
-            ...data.split("\n").filter(Boolean),
-        ];
+    const paths = [
+        process.cwd(),
+        ...data.split('\n').filter(Boolean),
+    ];
 
-        return [...new Set(paths)];
-    } catch(err) {
-        console.error(err);
-    }
-}
+    return [...new Set(paths)];
+};
 
 const show_in_fzf = (paths) => {
     return new Promise((resolve, reject) => {
@@ -60,54 +67,67 @@ const show_in_fzf = (paths) => {
             selected += data.toString();
         });
 
-        fzf.on('close', (code) => {
-            if (code === 0) {
-                resolve(
-                    selected
-                        .trim()
-                        .replace(/^⭐\s*/, '')
-                );
-            } else {
-                reject(new Error('no path selected'));
+        fzf.on('close', async (code) => {
+            if (code !== 0) {
+                reject(new Error('No path selected'));
+                return;
             }
 
-            console.log('fzf exited with', code);
+            const selected_path = selected
+                .trim()
+                .replace(/^⭐\s*/, '');
+
+            // persist cwd only if explicitly selected
+            if (selected_path === cwd) {
+                const data = await readFile(PATHS_FILE, 'utf8');
+
+                const exists = data
+                    .split('\n')
+                    .filter(Boolean)
+                    .includes(selected_path);
+
+                if (!exists) {
+                    await appendFile(
+                        PATHS_FILE,
+                        `${selected_path}\n`,
+                        'utf8'
+                    );
+                }
+            }
+
+            resolve(selected_path);
         });
     });
 };
 
 const open_session = (session_path) => {
-    const tmux_session = spawn('tmux', [
+    const session_name = path.basename(session_path);
+
+    const tmux = spawn('tmux', [
         'attach-session',
         '-t',
-        `${session_path}`,
-        '-c',
-        `${session_path}`,
+        session_name,
     ], {
-        stdio: 'inherit'
+        stdio: 'inherit',
     });
 
-    tmux_session.on('close', (code) => {
-        if (code === 0) {
-            console.log('Exited with code', code);
-        }
-        else if (code === 1) {
-            const tmux_session = spawn('tmux', [
+    tmux.on('close', (code) => {
+        if (code === 1) {
+            spawn('tmux', [
                 'new-session',
                 '-s',
-                `${session_path}`,
+                session_name,
                 '-c',
-                `${session_path}`,
+                session_path,
             ], {
-                stdio: 'inherit'
+                stdio: 'inherit',
             });
         }
-    })
-}
+    });
+};
 
 ensure_storage()
-    .then(() => list_paths())
-    .then(x => x.filter(str => str.length !== 0))
-    .then(x => show_in_fzf(x))
-    .then(x => open_session(x))
-    .catch(err => console.error(err));
+    .then(list_paths)
+    .then(show_in_fzf)
+    .then(open_session)
+    .catch(console.error);
