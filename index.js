@@ -11,17 +11,7 @@ const PATH = path.join(
     'paths.dat'
 );
 
-// const tmux = spawn('tmux', [
-//   'new-session',
-//   '-s',
-//   'my-session'
-// ], {
-//   stdio: 'inherit'
-// })
 
-// tmux.on('close', (code) => {
-//   console.log('Exited with code', code)
-// })
 
 const list_paths = async () => {
     try {
@@ -49,7 +39,7 @@ const show_in_fzf = (paths) => {
 
         fzf.on('close', (code) => {
             if (code === 0) {
-                resolve(selected);
+                resolve(selected.trim());
             } else {
                 reject("no path selected");
             }
@@ -60,7 +50,32 @@ const show_in_fzf = (paths) => {
 }
 
 const open_session = (session_path) => {
-    console.log("path = " + session_path);
+    const tmux_session = spawn('tmux', [
+        'attach-session',
+        '-t',
+        `${session_path}`,
+        '-c',
+        `${session_path}`,
+    ], {
+        stdio: 'inherit'
+    });
+
+    tmux_session.on('close', (code) => {
+        if (code === 0) {
+            console.log('Exited with code', code);
+        }
+        else if (code === 1) {
+            const tmux_session = spawn('tmux', [
+                'new-session',
+                '-s',
+                `${session_path}`,
+                '-c',
+                `${session_path}`,
+            ], {
+                stdio: 'inherit'
+            });
+        }
+    })
 }
 
 list_paths()
