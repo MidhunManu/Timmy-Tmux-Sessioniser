@@ -84,7 +84,7 @@ npm install -g timmy
 ### local development
 
 ```bash
-git clone <repo>
+git clone https://github.com/MidhunManu/Timmy-Tmux-Sessioniser
 cd timmy
 npm install
 npm link
