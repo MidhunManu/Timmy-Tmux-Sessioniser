@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { spawn } from 'child_process'
-import { readFile } from 'fs/promises';
+import { access, mkdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { constants } from 'fs';
 
 const PATH = path.join(
     os.homedir(),
@@ -13,6 +14,15 @@ const PATH = path.join(
     'paths.dat'
 );
 
+const ensure_storage = async () => {
+    const dir = path.dirname(PATH);
+    await mkdir(dir, { recursive: true });
+    try {
+        await access(PATH, constants.F_OK);
+    } catch {
+        await writeFile(PATH, '', 'utf-8');
+    }
+}
 
 const list_paths = async () => {
     try {
@@ -95,7 +105,8 @@ const open_session = (session_path) => {
     })
 }
 
-list_paths()
+ensure_storage()
+    .then(() => list_paths())
     .then(x => x.filter(str => str.length !== 0))
     .then(x => show_in_fzf(x))
     .then(x => open_session(x))
