@@ -4,6 +4,9 @@
   "description": "A Tmux Sessionizer for TMUX for MacOS ",
   "main": "index.js",
   "type": "module",
+  "bin": {
+    "timmy": "./index.js"
+  },
   "scripts": {
     "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

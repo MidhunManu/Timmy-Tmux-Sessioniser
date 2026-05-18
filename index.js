@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { spawn } from 'child_process'
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -12,11 +14,16 @@ const PATH = path.join(
 );
 
 
-
 const list_paths = async () => {
     try {
         const data = await readFile(PATH, "utf-8");
-        return data.split("\n");
+
+        const paths = [
+            process.cwd(),
+            ...data.split("\n").filter(Boolean),
+        ];
+
+        return [...new Set(paths)];
     } catch(err) {
         console.error(err);
     }
