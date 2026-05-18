@@ -24,30 +24,40 @@ const list_paths = async () => {
 
 const show_in_fzf = (paths) => {
     return new Promise((resolve, reject) => {
+        const cwd = process.cwd();
+
+        const display_paths = paths.map(p =>
+            p === cwd ? `⭐ ${p}` : p
+        );
+
         const fzf = spawn('fzf', [], {
             stdio: ['pipe', 'pipe', 'inherit'],
-        })
+        });
 
-        fzf.stdin.write(paths.join('\n'))
-        fzf.stdin.end()
+        fzf.stdin.write(display_paths.join('\n'));
+        fzf.stdin.end();
 
         let selected = '';
 
         fzf.stdout.on('data', (data) => {
             selected += data.toString();
-        })
+        });
 
         fzf.on('close', (code) => {
             if (code === 0) {
-                resolve(selected.trim());
+                resolve(
+                    selected
+                        .trim()
+                        .replace(/^⭐\s*/, '')
+                );
             } else {
-                reject("no path selected");
+                reject('no path selected');
             }
-            console.log('fzf exited with', code)
-        })
 
+            console.log('fzf exited with', code);
+        });
     });
-}
+};
 
 const open_session = (session_path) => {
     const tmux_session = spawn('tmux', [
