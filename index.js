@@ -68,7 +68,7 @@ const show_in_fzf = (paths) => {
                         .replace(/^⭐\s*/, '')
                 );
             } else {
-                reject('no path selected');
+                reject(new Error('no path selected'));
             }
 
             console.log('fzf exited with', code);
