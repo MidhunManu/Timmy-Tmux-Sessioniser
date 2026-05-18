@@ -33,28 +33,38 @@ const list_paths = async () => {
 }
 
 const show_in_fzf = (paths) => {
-    const fzf = spawn('fzf', [], {
-        stdio: ['pipe', 'inherit', 'inherit'],
-    })
+    return new Promise((resolve, reject) => {
+        const fzf = spawn('fzf', [], {
+            stdio: ['pipe', 'pipe', 'inherit'],
+        })
 
-    fzf.stdin.write(paths.join('\n'))
-    fzf.stdin.end()
+        fzf.stdin.write(paths.join('\n'))
+        fzf.stdin.end()
 
-    let selected = '';
+        let selected = '';
 
-    fzf.stdout.on('data', (data) => {
-        selected += data.toString();
-    })
+        fzf.stdout.on('data', (data) => {
+            selected += data.toString();
+        })
 
-    fzf.on('close', (code) => {
-        if (code === 0) {
-            resolve
-        }
-        console.log('fzf exited with', code)
-    })
+        fzf.on('close', (code) => {
+            if (code === 0) {
+                resolve(selected);
+            } else {
+                reject("no path selected");
+            }
+            console.log('fzf exited with', code)
+        })
+
+    });
+}
+
+const open_session = (session_path) => {
+    console.log("path = " + session_path);
 }
 
 list_paths()
     .then(x => x.filter(str => str.length !== 0))
     .then(x => show_in_fzf(x))
+    .then(x => open_session(x))
     .catch(err => console.error(err));
